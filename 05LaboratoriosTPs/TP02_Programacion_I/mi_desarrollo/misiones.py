@@ -77,6 +77,14 @@ MISION_LARGA = [
     ("detenerse",),
 ]
 
+MISION_PROPIA = [
+    ("avanzar", 0.3, 1.5),
+    ("girar", 0.5, 1.57),
+    ("saludar",),
+    ("avanzar", 0.2, 1.0),
+    ("detenerse",),
+]
+
 # Todas juntas, por si queres elegir desde un menu.
 MISIONES = {
     "basica": MISION_BASICA,

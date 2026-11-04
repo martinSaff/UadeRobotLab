@@ -15,7 +15,7 @@
 
 from robot import ErrorDeSeguridad, Robot
 
-from misiones import MISION_BASICA, MISION_CON_ERRORES, MISION_CUADRADO
+from misiones import MISION_BASICA, MISION_CON_ERRORES, MISION_CUADRADO, MISION_PROPIA, MISIONES
 
 
 # =====================================================================
@@ -40,7 +40,32 @@ def comando_es_valido(comando):
       - que el tiempo no sea negativo
     """
     # TU CODIGO ACA
-    pass
+    if type(comando) != tuple or len(comando) == 0:
+        return False
+
+    accion = comando[0]
+
+    if accion in ("detenerse", "saludar"):
+        return len(comando) == 1
+
+    if accion in ("avanzar", "girar"):
+        if len(comando) != 3:
+            return False
+        
+        _, velocidad, tiempo = comando
+
+        es_num_vel = (type(velocidad) == int or type(velocidad) == float)
+        es_num_tiempo = (type(tiempo) == int or type(tiempo) == float)
+
+        if not es_num_vel or not es_num_tiempo:
+            return False
+
+        if tiempo < 0:
+            return False
+
+        return True
+
+    return False
 
 
 # =====================================================================
@@ -61,7 +86,28 @@ def ejecutar_comando(robot, comando):
     Eso llega como un ErrorDeSeguridad y conviene atraparlo.
     """
     # TU CODIGO ACA
-    pass
+    accion = comando[0]
+
+    try:
+        if accion == "avanzar":
+            _, velocidad, tiempo = comando
+            robot.avanzar(velocidad=velocidad, tiempo=tiempo)
+        elif accion == "girar":
+            _, velocidad, tiempo = comando
+            robot.girar(velocidad=velocidad, tiempo=tiempo)
+        elif accion == "detenerse":
+            robot.detenerse()
+        elif accion == "saludar":
+            robot.saludar()
+        else:
+            return f"Comando desconocido: {accion}"
+        
+        return "OK"
+    
+    except ErrorDeSeguridad as e:
+        return f"Rechazado por seguridad: {e}"
+    except Exception as e:
+        return f"Error de ejecución: {e}"
 
 
 # =====================================================================
@@ -78,7 +124,40 @@ def ejecutar_mision(robot, mision, historial):
     Un comando invalido NO tiene que cortar la mision.
     """
     # TU CODIGO ACA
-    pass
+    print(f"\n--- Iniciando ejecución de misión ({len(mision)} comandos) ---")
+
+    for comando in mision:
+        if not comando_es_valido(comando):
+            motivo = f"Comando inválido por sintaxis o parámetros erróneos: {comando}"
+            print(f"[OMITIDO] {motivo}")
+            historial.append({
+                "comando": comando,
+                "valido": False,
+                "ejecutado": False,
+                "motivo": motivo
+            })
+            continue
+
+        resultado = ejecutar_comando(robot, comando)
+
+        if resultado == "OK":
+            print(f"[EJECUTADO] {comando}")
+            historial.append({
+                "comando": comando,
+                "valido": True,
+                "ejecutado": True,
+                "motivo": ""
+            })
+        else:
+            print(f"[RECHAZADO] {comando} -> {resultado}")
+            historial.append({
+                "comando": comando,
+                "valido": True,
+                "ejecutado": False,
+                "motivo": resultado
+            })
+
+    print("--- Misión finalizada ---\n")
 
 
 # =====================================================================
@@ -93,7 +172,35 @@ def generar_reporte(historial):
       - cual fue el motivo de cada rechazo
     """
     # TU CODIGO ACA
-    pass
+    total = len(historial)
+    ejecutados_bien = 0
+    for h in historial:
+        if h["ejecutado"]:
+            ejecutados_bien += 1
+
+    rechazados = total - ejecutados_bien
+
+    print("=====================================")
+    print("         REPORTE FINAL DE MISIÓN")
+    print("=====================================")
+    print(f" Total de comandos procesados : {total}")
+    print(f" Ejecutados correctamente     : {ejecutados_bien}")
+    print(f" Rechazados / Omitidos        : {rechazados}")
+    print("-------------------------------------")
+    print(" Detalle de anomalías / rechazos:")
+    
+    hubo_rechazos = False
+    i = 1
+    for h in historial:
+        if not h["ejecutado"]:
+            hubo_rechazos = True
+            print(f"  {i}. Comando: {h['comando']}")
+            print(f"     Motivo : {h['motivo']}")
+            i += 1
+
+    if not hubo_rechazos:
+        print("  (Ninguno. Todos los comandos se ejecutaron con éxito).")
+    print("=====================================")
 
 
 # =====================================================================
@@ -106,11 +213,27 @@ def main():
     historial = []
 
     try:
-        # Empeza probando con MISION_BASICA.
-        # Cuando funcione, proba con MISION_CON_ERRORES: esa tiene
-        # comandos invalidos a proposito.
-        ejecutar_mision(robot, MISION_BASICA, historial)
-        generar_reporte(historial)
+        print("=====================================")
+        print("     SELECCIÓN DE MISIÓN - GO2")
+        print("=====================================")
+        print("Misiones disponibles:")
+        print("  - basica")
+        print("  - cuadrado")
+        print("  - errores")
+        print("  - larga")
+        print("-------------------------------------")
+        
+        opcion = input("Escribí el nombre de la misión que querés ejecutar: ").strip().lower()
+
+        if opcion in MISIONES:
+            mision_elegida = MISIONES[opcion]
+            print(f"\nCargando misión '{opcion}'...")
+            
+            ejecutar_mision(robot, mision_elegida, historial)
+            generar_reporte(historial)
+        else:
+            print(f"\n[ERROR] La misión '{opcion}' no es válida o no existe.")
+
     finally:
         robot.detenerse()
         robot.desconectar()
