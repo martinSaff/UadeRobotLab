@@ -1,0 +1,2 @@
+# Evidencias: Obtención y Clonado del Repositorio
+Contiene las capturas que demuestran el clonado del repositorio oficial `UaderRobotLab` mediante GitHub Desktop y la inspección de los archivos base en la carpeta `TP02_Programacion_I`.
